@@ -1,0 +1,317 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Norton Core 518 (Symantec secure router)
+ * SoC: Qualcomm IPQ8065, eMMC boot, 2x QCA9984 (PCIe), QCA8337-class switch
+ *
+ * Reconstructed from the factory QSDK 4.4.60 image (norton_core-518-...-qsdk-1.img)
+ * and the 5.10 OpenWrt SNAPSHOT port shipped inside ntbsubootemmc-ipq806x-single.img.
+ */
+
+#include "qcom-ipq8065-smb208.dtsi"
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "Norton Core 518";
+	compatible = "norton,core-518", "qcom,ipq8065", "qcom,ipq8064";
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x42000000 0x3e000000>;
+	};
+
+	aliases {
+		mdio-gpio0 = &mdio0;
+		sdcc1 = &sdcc1;
+	};
+
+	chosen {
+		bootargs = "rootfstype=squashfs,ext4 rootwait noinitrd fstools_ignore_partname=1";
+		append-rootblock = "root=/dev/mmcblk0p";
+		stdout-path = "serial0:115200n8";
+	};
+
+	keys {
+		compatible = "gpio-keys";
+		pinctrl-0 = <&button_pins>;
+		pinctrl-names = "default";
+
+		reset {
+			label = "reset";
+			gpios = <&qcom_pinmux 68 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+			debounce-interval = <60>;
+			wakeup-source;
+		};
+	};
+};
+
+&qcom_pinmux {
+	button_pins: button-pins {
+		mux {
+			pins = "gpio68";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+
+	mdio0_pins: mdio0-state {
+		/delete-property/ pins;
+		/delete-property/ function;
+		/delete-property/ drive-strength;
+		/delete-property/ bias-disable;
+
+		mux {
+			pins = "gpio0", "gpio1";
+			function = "mdio";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		clk {
+			pins = "gpio1";
+			input-disable;
+		};
+	};
+
+	rgmii2_pins: rgmii2-state {
+		/delete-property/ pins;
+		/delete-property/ function;
+		/delete-property/ drive-strength;
+		/delete-property/ bias-disable;
+
+		mux {
+			pins = "gpio27", "gpio28", "gpio29",
+				"gpio30", "gpio31", "gpio32",
+				"gpio51", "gpio52", "gpio59",
+				"gpio60", "gpio61", "gpio62";
+			function = "rgmii2";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		tx {
+			pins = "gpio27", "gpio28", "gpio29",
+				"gpio30", "gpio31", "gpio32";
+			input-disable;
+		};
+	};
+
+	usb0_pwr_en_pins: usb0-pwr-en-pins {
+		mux {
+			pins = "gpio22", "gpio24";
+			function = "gpio";
+			drive-strength = <12>;
+		};
+
+		pwr {
+			pins = "gpio22";
+			bias-pull-down;
+			output-high;
+		};
+
+		ovc {
+			pins = "gpio24";
+			bias-pull-up;
+		};
+	};
+};
+
+&sdcc1 {
+	status = "okay";
+};
+
+&adm_dma {
+	status = "okay";
+};
+
+&usb3_0 {
+	status = "okay";
+
+	pinctrl-0 = <&usb0_pwr_en_pins>;
+	pinctrl-names = "default";
+};
+
+&hs_phy_0 {
+	status = "okay";
+};
+
+&ss_phy_0 {
+	status = "okay";
+};
+
+&usb3_1 {
+	status = "okay";
+};
+
+&hs_phy_1 {
+	status = "okay";
+};
+
+&ss_phy_1 {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+
+	reset-gpios = <&qcom_pinmux 3 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&pcie0_pins>;
+	pinctrl-names = "default";
+};
+
+&pcie1 {
+	status = "okay";
+
+	reset-gpios = <&qcom_pinmux 48 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&pcie1_pins>;
+	pinctrl-names = "default";
+	max-link-speed = <1>;
+};
+
+&mdio0 {
+	status = "okay";
+
+	pinctrl-0 = <&mdio0_pins>;
+	pinctrl-names = "default";
+
+	switch@0 {
+		compatible = "qca,qca8337";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				label = "cpu";
+				ethernet = <&gmac1>;
+				phy-mode = "rgmii";
+				tx-internal-delay-ps = <1000>;
+				rx-internal-delay-ps = <1000>;
+
+				fixed-link {
+					speed = <1000>;
+					full-duplex;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+				label = "lan1";
+				phy-mode = "internal";
+				phy-handle = <&phy_port1>;
+			};
+
+			port@2 {
+				reg = <2>;
+				label = "lan2";
+				phy-mode = "internal";
+				phy-handle = <&phy_port2>;
+			};
+
+			port@3 {
+				reg = <3>;
+				label = "lan3";
+				phy-mode = "internal";
+				phy-handle = <&phy_port3>;
+			};
+
+			port@4 {
+				reg = <4>;
+				label = "lan4";
+				phy-mode = "internal";
+				phy-handle = <&phy_port4>;
+			};
+
+			port@5 {
+				reg = <5>;
+				label = "wan";
+				phy-mode = "internal";
+				phy-handle = <&phy_port5>;
+			};
+
+			port@6 {
+				reg = <6>;
+				label = "cpu";
+				ethernet = <&gmac2>;
+				phy-mode = "sgmii";
+				qca,sgmii-enable-pll;
+
+				fixed-link {
+					speed = <1000>;
+					full-duplex;
+				};
+			};
+		};
+
+		mdio {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			phy_port1: phy@0 {
+				reg = <0>;
+			};
+
+			phy_port2: phy@1 {
+				reg = <1>;
+			};
+
+			phy_port3: phy@2 {
+				reg = <2>;
+			};
+
+			phy_port4: phy@3 {
+				reg = <3>;
+			};
+
+			phy_port5: phy@4 {
+				reg = <4>;
+			};
+		};
+	};
+};
+
+&gmac1 {
+	status = "okay";
+
+	phy-mode = "rgmii";
+	qcom,id = <1>;
+	qcom,phy_mdio_addr = <4>;
+	qcom,poll_required = <0>;
+	qcom,rgmii_delay = <1>;
+	qcom,phy_mii_type = <0>;
+	qcom,emulation = <0>;
+	qcom,irq = <255>;
+
+	pinctrl-0 = <&rgmii2_pins>;
+	pinctrl-names = "default";
+
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
+};
+
+&gmac2 {
+	status = "okay";
+
+	phy-mode = "sgmii";
+	qcom,id = <2>;
+	qcom,phy_mdio_addr = <0>;	/* none */
+	qcom,poll_required = <0>;	/* no polling */
+	qcom,rgmii_delay = <0>;
+	qcom,phy_mii_type = <1>;
+	qcom,emulation = <0>;
+	qcom,irq = <258>;
+
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+	};
+};
